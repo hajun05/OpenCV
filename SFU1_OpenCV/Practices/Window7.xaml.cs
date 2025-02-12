@@ -28,11 +28,12 @@ namespace SFU1_OpenCV.Practices
 
             string imagePath = "C:\\Users\\Hajun\\source\\repos\\OpenCV\\SFU1_OpenCV\\Resources\\cat.jpg";
             Mat src = Cv2.ImRead(imagePath);
-            Cv2.Resize(src, src, new OpenCvSharp.Size(src.Size().Width / 4, src.Size().Height / 4));
+            Cv2.Resize(src, src, new OpenCvSharp.Size(src.Size().Width / 3, src.Size().Height / 3));
 
             //Contour1(src);
             //Contour2(src);
-            Contour3(src);
+            //Contour3(src);
+            Contour4(src);
 
             Cv2.WaitKey(0);
             Cv2.DestroyAllWindows();
@@ -117,12 +118,21 @@ namespace SFU1_OpenCV.Practices
         {
             OpenCvSharp.Point[][] contours;
             HierarchyIndex[] hierarchy;
+
+            // 윤곽선 찾기
+            Cv2.FindContours(binary, out contours, out hierarchy,
+                        RetrievalModes.External, ContourApproximationModes.ApproxSimple);
+            // 윤곽선 그리기 (초록색)
+            Cv2.DrawContours(image, contours, -1, new Scalar(0, 255, 0), 2);
+            // 윤곽선 좌표값을 이용하여 가장 왼쪽, 오른쪽, 위쪽, 아래쪽 점 찾기
+
             // 컨투어 찾기
             Cv2.FindContours(binary, out contours, out hierarchy,
                         RetrievalModes.External, ContourApproximationModes.ApproxSimple);
             // 컨투어 그리기 (초록색)
             Cv2.DrawContours(image, contours, -1, new Scalar(0, 255, 0), 2);
             // 컨투어의 좌표값을 이용하여 가장 왼쪽, 오른쪽, 위쪽, 아래쪽 점 찾기
+
             foreach (var contour in contours)
             {
                 OpenCvSharp.Point extLeft = contour[0], extRight = contour[0],
@@ -141,6 +151,50 @@ namespace SFU1_OpenCV.Practices
                 Cv2.Circle(image, extBottom, 8, new Scalar(255, 255, 0), -1);
             }
             return image;
+        }
+
+        public void Contour4(Mat src)
+        {
+            // ▶ 1. 블러 필터 (평균 블러)
+            Mat blurKernel = new Mat(3, 3, MatType.CV_32F);
+            blurKernel.SetArray(Flatten(new float[,] {
+            { 1/9f, 1/9f, 1/9f },
+            { 1/9f, 1/9f, 1/9f },
+            { 1/9f, 1/9f, 1/9f }
+        }));
+            Mat blurResult = new Mat();
+            Cv2.Filter2D(src, blurResult, -1, blurKernel);
+
+            // ▶ 2. 샤프닝 필터 (이미지 선명화)
+            Mat sharpenKernel = new Mat(3, 3, MatType.CV_32F);
+            sharpenKernel.SetArray(Flatten(new float[,] {
+            {  0, -1,  0 },
+            { -1,  5, -1 },
+            {  0, -1,  0 }
+        }));
+            Mat sharpenResult = new Mat();
+            Cv2.Filter2D(src, sharpenResult, -1, sharpenKernel);
+
+            // ▶ 3. 엣지 검출 필터 (Sobel 유사)
+            Mat edgeKernel = new Mat(3, 3, MatType.CV_32F);
+            edgeKernel.SetArray(Flatten(new float[,] {
+            { -1, -1, -1 },
+            { -1,  8, -1 },
+            { -1, -1, -1 }
+        }));
+            Mat edgeResult = new Mat();
+            Cv2.Filter2D(src, edgeResult, -1, edgeKernel);
+
+            // ▶ 4. 결과 출력
+            Cv2.ImShow("Original Image", src);
+            Cv2.ImShow("Blur Filter", blurResult);
+            Cv2.ImShow("Sharpen Filter", sharpenResult);
+            Cv2.ImShow("Edge Detection Filter", edgeResult);
+        }
+        // 2D 배열을 1D 배열로 변환
+        static float[] Flatten(float[,] array)
+        {
+            return array.Cast<float>().ToArray();
         }
     }
 }
