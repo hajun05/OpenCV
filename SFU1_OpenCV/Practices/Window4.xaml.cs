@@ -41,7 +41,6 @@ namespace SFU1_OpenCV.Practices
 
 
             Cv2.NamedWindow("image", WindowFlags.Normal);
-            // WindowFlags.Normal : "dst"의 이미지 크기를 창 크기에 맞게 변경.
             Cv2.ResizeWindow("image", 700, 500);
             Cv2.ImShow("image", image);
 
